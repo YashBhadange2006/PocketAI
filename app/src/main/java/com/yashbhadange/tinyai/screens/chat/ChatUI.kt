@@ -30,7 +30,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.DrawerValue
@@ -74,7 +73,8 @@ data class Message(
     val imagePath: String? = null,
     val imageName: String? = null,
     val isStreaming: Boolean = false,
-    val thinkingText: String = ""
+    val thinkingText: String = "",
+    val includeInContext: Boolean = true
 )
 
 
@@ -234,6 +234,9 @@ fun ChatUI(
                     },
                     onSend = { userText ->
                         chatViewModel.sendMessage(userText)
+                    },
+                    onStopClick = {
+                        chatViewModel.stopResponse()
                     }
                 )
             }
@@ -275,59 +278,7 @@ fun MessageList(
         items(messages) { message ->
             MessageBubble(message)
         }
-        if (isTyping) {
-            item {
-                TypingBubble()
-            }
-        }
     }
-}
-
-@Composable
-fun TypingBubble() {
-    val infiniteTransition = rememberInfiniteTransition(label = "typing")
-
-    val dot1 by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "dotAlpha"
-    )
-
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        Card(
-            modifier = Modifier.padding(8.dp),
-            shape = RoundedCornerShape(20.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Dot(dot1)
-                Dot(dot1)
-                Dot(dot1)
-            }
-        }
-    }
-}
-
-@Composable
-fun Dot(alpha: Float) {
-    Box(
-        modifier = Modifier
-            .size(10.dp)
-            .alpha(alpha)
-            .background(
-                Color.Gray,
-                CircleShape
-            )
-    )
 }
 
 private fun resolveFileName(

@@ -31,6 +31,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     internal var activeModel = ModelCatalog.defaultModel
     internal var downloadPollingJob: kotlinx.coroutines.Job? = null
+    internal var activeGenerationJob: kotlinx.coroutines.Job? = null
     internal var loadedModelId: String? = null
     internal var loadedSessionId: Long? = null
     internal var downloadingModelId: String? = null

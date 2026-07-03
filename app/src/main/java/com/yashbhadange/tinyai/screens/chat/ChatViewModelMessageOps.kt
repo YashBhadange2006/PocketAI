@@ -3,12 +3,15 @@ package com.yashbhadange.tinyai.screens.chat
 import androidx.lifecycle.viewModelScope
 import com.yashbhadange.tinyai.data.database.ChatMessageEntity
 import com.yashbhadange.tinyai.data.database.ChatSession
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 fun ChatViewModel.sendMessage(prompt: String) {
+    var assistantMessageIndex = -1
+    var streamedReply = ""
+
     if (selectedAttachmentUri != null) {
         val attachmentUri = selectedAttachmentUri
         val attachmentName = selectedAttachmentName ?: "Selected image"
@@ -33,7 +36,11 @@ fun ChatViewModel.sendMessage(prompt: String) {
 
             if (!ensureModelLoaded()) {
                 messages.add(
-                    Message("The model is not ready yet. Download and load AI model from the model menu in the Settings icon first.", false)
+                    Message(
+                        "The model is not ready yet. Download and load AI model from the model menu in the Settings icon first.",
+                        false,
+                        includeInContext = false
+                    )
                 )
                 return@launch
             }
@@ -45,36 +52,111 @@ fun ChatViewModel.sendMessage(prompt: String) {
                 imagePath = savedImagePath,
                 imageName = attachmentName
             )
-            val assistantMessageIndex = messages.size
-            messages.add(Message(text = "...", isUser = false, isStreaming = true))
-            var streamedReply = ""
-            val reply = withContext(Dispatchers.IO) {
-                when {
-                    attachmentUri == null -> "No image was selected."
-                    attachmentMimeType?.startsWith("image/") != true -> {
-                        "Only image attachments are supported right now."
-                    }
-                    else -> {
-                        llm.generateWithImageStream(effectivePrompt, attachmentUri) { partialReply ->
-                            if (partialReply.isEmpty()) {
-                                return@generateWithImageStream
+            assistantMessageIndex = messages.size
+            messages.add(Message(text = "...", isUser = false, isStreaming = true, includeInContext = false))
+            activeGenerationJob = viewModelScope.launch {
+                isTyping = true
+                try {
+                    val reply = withContext(Dispatchers.IO) {
+                        when {
+                            attachmentUri == null -> "No image was selected."
+                            attachmentMimeType?.startsWith("image/") != true -> {
+                                "Only image attachments are supported right now."
                             }
-                            streamedReply = mergeStreamChunk(
-                                currentText = streamedReply,
-                                incomingChunk = partialReply
-                            )
-                            val parsedReply = splitThinkingFromAnswer(streamedReply)
-                            viewModelScope.launch {
-                                updateAssistantMessage(
-                                    index = assistantMessageIndex,
-                                    text = parsedReply.answer.ifBlank {
-                                        if (parsedReply.thinking.isNotBlank()) "..." else streamedReply
-                                    },
-                                    isStreaming = true,
-                                    thinkingText = parsedReply.thinking
-                                )
+                            else -> {
+                                llm.generateWithImageStream(effectivePrompt, attachmentUri) { partialReply ->
+                                    if (partialReply.isEmpty()) {
+                                        return@generateWithImageStream
+                                    }
+                                    streamedReply = mergeStreamChunk(
+                                        currentText = streamedReply,
+                                        incomingChunk = partialReply
+                                    )
+                                    val parsedReply = splitThinkingFromAnswer(streamedReply)
+                                    viewModelScope.launch {
+                                        updateAssistantMessage(
+                                            index = assistantMessageIndex,
+                                            text = parsedReply.answer.ifBlank {
+                                                if (parsedReply.thinking.isNotBlank()) "..." else streamedReply
+                                            },
+                                            isStreaming = true,
+                                            thinkingText = parsedReply.thinking,
+                                            includeInContext = false
+                                        )
+                                    }
+                                }
                             }
                         }
+                    }
+                    val finalText = when {
+                        reply.isNotBlank() -> mergeStreamChunk(
+                            currentText = streamedReply,
+                            incomingChunk = reply
+                        )
+                        streamedReply.isNotBlank() -> streamedReply
+                        else -> ""
+                    }
+                    completeAssistantResponse(
+                        index = assistantMessageIndex,
+                        rawText = finalText,
+                        stopped = false
+                    )
+                } catch (_: CancellationException) {
+                    completeAssistantResponse(
+                        index = assistantMessageIndex,
+                        rawText = streamedReply,
+                        stopped = true
+                    )
+                } finally {
+                    clearSelectedAttachment()
+                    isTyping = false
+                    activeGenerationJob = null
+                }
+            }
+        }
+        return
+    }
+
+    messages.add(Message(prompt, true))
+
+    activeGenerationJob = viewModelScope.launch {
+        isTyping = true
+        try {
+            if (!ensureModelLoaded()) {
+                messages.add(
+                    Message(
+                        "The model is not ready yet. Download and load AI model from the model menu in the Settings icon first.",
+                        false,
+                        includeInContext = false
+                    )
+                )
+                return@launch
+            }
+
+            persistMessage(prompt, isUser = true)
+            val contextualPrompt = buildContextualPrompt()
+            assistantMessageIndex = messages.size
+            messages.add(Message(text = "...", isUser = false, isStreaming = true, includeInContext = false))
+            val reply = withContext(Dispatchers.IO) {
+                llm.generateStream(contextualPrompt) { partialReply ->
+                    if (partialReply.isEmpty()) {
+                        return@generateStream
+                    }
+                    streamedReply = mergeStreamChunk(
+                        currentText = streamedReply,
+                        incomingChunk = partialReply
+                    )
+                    val parsedReply = splitThinkingFromAnswer(streamedReply)
+                    viewModelScope.launch {
+                        updateAssistantMessage(
+                            index = assistantMessageIndex,
+                            text = parsedReply.answer.ifBlank {
+                                if (parsedReply.thinking.isNotBlank()) "..." else streamedReply
+                            },
+                            isStreaming = true,
+                            thinkingText = parsedReply.thinking,
+                            includeInContext = false
+                        )
                     }
                 }
             }
@@ -86,95 +168,27 @@ fun ChatViewModel.sendMessage(prompt: String) {
                 streamedReply.isNotBlank() -> streamedReply
                 else -> ""
             }
-            val parsedReply = splitThinkingFromAnswer(finalText)
-            updateAssistantMessage(
+            completeAssistantResponse(
                 index = assistantMessageIndex,
-                text = parsedReply.answer.ifBlank { if (parsedReply.thinking.isNotBlank()) "..." else "No response generated." },
-                isStreaming = false,
-                thinkingText = parsedReply.thinking
+                rawText = finalText,
+                stopped = false
             )
-            persistMessage(
-                text = parsedReply.answer.ifBlank { "No response generated." },
-                isUser = false,
-                thinkingText = parsedReply.thinking
+        } catch (_: CancellationException) {
+            completeAssistantResponse(
+                index = assistantMessageIndex,
+                rawText = streamedReply,
+                stopped = true
             )
-            clearSelectedAttachment()
+        } finally {
+            isTyping = false
+            activeGenerationJob = null
         }
-        return
-    }
-
-    messages.add(Message(prompt, true))
-
-    viewModelScope.launch {
-        if (!ensureModelLoaded()) {
-            messages.add(
-                Message("The model is not ready yet. Download and load AI model from the model menu in the Settings icon first.", false)
-            )
-            return@launch
-        }
-
-        persistMessage(prompt, isUser = true)
-        val contextualPrompt = buildContextualPrompt()
-        val assistantMessageIndex = messages.size
-        messages.add(Message(text = "...", isUser = false, isStreaming = true))
-        var streamedReply = ""
-        val reply = withContext(Dispatchers.IO) {
-            llm.generateStream(contextualPrompt) { partialReply ->
-                if (partialReply.isEmpty()) {
-                    return@generateStream
-                }
-                streamedReply = mergeStreamChunk(
-                    currentText = streamedReply,
-                    incomingChunk = partialReply
-                )
-                val parsedReply = splitThinkingFromAnswer(streamedReply)
-                viewModelScope.launch {
-                    updateAssistantMessage(
-                        index = assistantMessageIndex,
-                        text = parsedReply.answer.ifBlank {
-                            if (parsedReply.thinking.isNotBlank()) "..." else streamedReply
-                        },
-                        isStreaming = true,
-                        thinkingText = parsedReply.thinking
-                    )
-                }
-            }
-        }
-        val finalText = when {
-            reply.isNotBlank() -> mergeStreamChunk(
-                currentText = streamedReply,
-                incomingChunk = reply
-            )
-            streamedReply.isNotBlank() -> streamedReply
-            else -> ""
-        }
-        val parsedFinalReply = splitThinkingFromAnswer(finalText)
-        updateAssistantMessage(
-            index = assistantMessageIndex,
-            text = parsedFinalReply.answer.ifBlank { if (parsedFinalReply.thinking.isNotBlank()) "..." else "No response generated." },
-            isStreaming = false,
-            thinkingText = parsedFinalReply.thinking
-        )
-        persistMessage(
-            text = parsedFinalReply.answer.ifBlank { "No response generated." },
-            isUser = false,
-            thinkingText = parsedFinalReply.thinking
-        )
     }
 }
 
 private fun ChatViewModel.buildContextualPrompt(): String {
     val recentMessages = messages
-        .let { currentMessages ->
-            if (
-                currentMessages.firstOrNull()?.isUser == false &&
-                currentMessages.firstOrNull()?.text?.startsWith("This app now downloads supported local models") == true
-            ) {
-                currentMessages.drop(1)
-            } else {
-                currentMessages
-            }
-        }
+        .filter { it.includeInContext }
         .takeLast(ChatViewModel.CONTEXT_MESSAGE_LIMIT)
 
     if (recentMessages.isEmpty()) return ""
@@ -259,16 +273,52 @@ private fun ChatViewModel.updateAssistantMessage(
     index: Int,
     text: String,
     isStreaming: Boolean,
-    thinkingText: String = ""
+    thinkingText: String = "",
+    includeInContext: Boolean = true
 ) {
     if (index in messages.indices) {
         messages[index] = Message(
             text = text,
             isUser = false,
             isStreaming = isStreaming,
-            thinkingText = thinkingText
+            thinkingText = thinkingText,
+            includeInContext = includeInContext
         )
     }
+}
+
+private suspend fun ChatViewModel.completeAssistantResponse(
+    index: Int,
+    rawText: String,
+    stopped: Boolean
+) {
+    val parsedReply = splitThinkingFromAnswer(rawText)
+    val finalAnswer = parsedReply.answer.ifBlank {
+        when {
+            parsedReply.thinking.isNotBlank() -> "..."
+            stopped -> "Response stopped."
+            else -> "No response generated."
+        }
+    }
+    updateAssistantMessage(
+        index = index,
+        text = finalAnswer,
+        isStreaming = false,
+        thinkingText = parsedReply.thinking,
+        includeInContext = !stopped
+    )
+    if (!stopped) {
+        persistMessage(
+            text = finalAnswer,
+            isUser = false,
+            thinkingText = parsedReply.thinking
+        )
+    }
+}
+
+fun ChatViewModel.stopResponse() {
+    llm.cancelGeneration()
+    activeGenerationJob?.cancel()
 }
 
 private fun ChatViewModel.mergeStreamChunk(currentText: String, incomingChunk: String): String {

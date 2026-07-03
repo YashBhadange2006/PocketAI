@@ -16,6 +16,7 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
 import com.google.mediapipe.tasks.genai.llminference.ProgressListener
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -43,6 +44,7 @@ class LocalLLMManager(
     private var llmInference: LlmInference? = null
     private var liteRtEngine: Engine? = null
     private var liteRtConversation: Conversation? = null
+    private var activeMediaPipeFuture: com.google.common.util.concurrent.ListenableFuture<String>? = null
     private var loadedModelPath: String? = null
     private var loadedRuntime: ModelRuntime? = null
     private var loadedSystemPrompt: String = ""
@@ -115,6 +117,7 @@ class LocalLLMManager(
                             onPartial(partialResponse)
                         }
                     )
+                    activeMediaPipeFuture = future
                     withContext(Dispatchers.IO) {
                         future.get()
                     }
@@ -134,8 +137,12 @@ class LocalLLMManager(
 
                 null -> "Model is not loaded yet. Download and load a model first."
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             "Failed to generate response: ${e.message ?: "unknown error"}"
+        } finally {
+            activeMediaPipeFuture = null
         }
     }
 
@@ -169,6 +176,7 @@ class LocalLLMManager(
                                 onPartial(partialResponse)
                             }
                         )
+                        activeMediaPipeFuture = future
                         withContext(Dispatchers.IO) {
                             future.get()
                         }
@@ -194,12 +202,17 @@ class LocalLLMManager(
 
                 null -> "Model is not loaded yet. Download and load a model first."
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             "Failed to analyze image: ${e.message ?: "unknown error"}"
+        } finally {
+            activeMediaPipeFuture = null
         }
     }
 
     fun close() {
+        cancelGeneration()
         llmInference?.close()
         llmInference = null
 
@@ -213,6 +226,12 @@ class LocalLLMManager(
         loadedModelPath = null
         loadedSystemPrompt = ""
         supportsVision = false
+    }
+
+    fun cancelGeneration() {
+        activeMediaPipeFuture?.cancel(true)
+        activeMediaPipeFuture = null
+        liteRtConversation?.cancelProcess()
     }
 
     private fun loadMediaPipeModel(modelPath: String, backend: ExecutionBackend) {

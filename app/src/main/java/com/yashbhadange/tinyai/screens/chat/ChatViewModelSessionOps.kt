@@ -97,7 +97,8 @@ fun ChatViewModel.loadChatSession(sessionId: Long) {
                     messages.add(
                         Message(
                             "This chat uses ${model.displayName}, but it is not loaded yet. Download it from Model Settings to continue.",
-                            false
+                            false,
+                            includeInContext = false
                         )
                     )
                 }
@@ -121,7 +122,8 @@ internal fun ChatViewModel.setIntroMessageIfNeeded() {
         messages.add(
             Message(
                 "This app now downloads supported local models on demand. It can load MediaPipe .task models and LiteRT-LM .litertlm models directly on device.",
-                false
+                false,
+                includeInContext = false
             )
         )
     }
@@ -194,7 +196,8 @@ private fun ChatViewModel.restoreLatestSessionInternal() {
                     messages.add(
                         Message(
                             "This chat uses ${model.displayName}, but it is not loaded yet. Download it from Model Settings to continue.",
-                            false
+                            false,
+                            includeInContext = false
                         )
                     )
                 }

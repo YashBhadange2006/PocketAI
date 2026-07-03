@@ -69,7 +69,7 @@ fun ChatViewModel.loadSelectedModel(model: ModelSpec) {
 
     if (!status.isDownloaded) {
         messages.add(
-            Message("Download ${model.displayName} first, then load it.", false)
+            Message("Download ${model.displayName} first, then load it.", false, includeInContext = false)
         )
         return
     }
@@ -90,10 +90,10 @@ fun ChatViewModel.deleteSelectedModel(model: ModelSpec) {
             downloader.deleteModel(model)
         }
 
-        if (deleted) {
-            if (loadedModelId == model.id) {
-                unloadActiveConversation()
-            }
+            if (deleted) {
+                if (loadedModelId == model.id) {
+                    unloadActiveConversation()
+                }
             if (loadingModelId == model.id) {
                 loadingModelId = null
                 isModelLoading = false
@@ -105,11 +105,11 @@ fun ChatViewModel.deleteSelectedModel(model: ModelSpec) {
                 modelDownloadStatus = downloader.getDownloadStatus(model)
             }
             messages.add(
-                Message("${model.displayName} was deleted from device storage.", false)
+                Message("${model.displayName} was deleted from device storage.", false, includeInContext = false)
             )
         } else {
             messages.add(
-                Message("Failed to delete ${model.displayName} from device storage.", false)
+                Message("Failed to delete ${model.displayName} from device storage.", false, includeInContext = false)
             )
         }
     }
@@ -223,7 +223,7 @@ internal suspend fun ChatViewModel.loadModelForContext(
 
     if (!status.isDownloaded) {
         messages.add(
-            Message("Download ${model.displayName} first, then load it.", false)
+            Message("Download ${model.displayName} first, then load it.", false, includeInContext = false)
         )
         loadedModelId = null
         loadedSessionId = null
@@ -259,14 +259,14 @@ internal suspend fun ChatViewModel.loadModelForContext(
             }
         }
 
-        messages.add(Message(confirmationMessage, false))
+        messages.add(Message(confirmationMessage, false, includeInContext = false))
         true
     } catch (e: Exception) {
         loadedModelId = null
         loadedSessionId = null
         isModelLoaded = false
         messages.add(
-            Message("Failed to load ${model.displayName}: ${e.message ?: "unknown error"}", false)
+            Message("Failed to load ${model.displayName}: ${e.message ?: "unknown error"}", false, includeInContext = false)
         )
         false
     } finally {

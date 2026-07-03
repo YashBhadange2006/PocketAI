@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import android.widget.Toast
+import androidx.compose.material.icons.automirrored.filled.Send
 import com.yashbhadange.tinyai.screens.chat.ChatViewModel
 
 @Composable
@@ -25,10 +27,13 @@ fun ChatInput(
     selectedAttachmentName: String?,
     onAttachClick: () -> Unit,
     onClearAttachment: () -> Unit,
-    onSend: (String) -> Unit
+    onSend: (String) -> Unit,
+    onStopClick: () -> Unit
 ) {
     var text by remember { mutableStateOf("") }
     val context = LocalContext.current
+    val isStopping = chatViewModel.isTyping
+    val canSend = text.isNotBlank() || selectedAttachmentName != null
 
     Card(
         modifier = Modifier
@@ -143,17 +148,19 @@ fun ChatInput(
 
                 IconButton(
                     onClick = {
-                        if (text.isNotBlank() || selectedAttachmentName != null) {
+                        if (isStopping) {
+                            onStopClick()
+                        } else if (canSend) {
                             onSend(text)
                             text = ""
                         }
                     },
-                    enabled = text.isNotBlank() || selectedAttachmentName != null
+                    enabled = isStopping || canSend
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Send,
-                        contentDescription = "Send",
-                        tint = if (text.isNotBlank() || selectedAttachmentName != null) {
+                        imageVector = if (isStopping) Icons.Default.Stop else Icons.AutoMirrored.Filled.Send,
+                        contentDescription = if (isStopping) "Stop response" else "Send",
+                        tint = if (isStopping || canSend) {
                             MaterialTheme.colorScheme.primary
                         } else {
                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
