@@ -1,140 +1,135 @@
-# TinyAI
+<p align="center">
+  <img src="screenshots/TinyAI%20Logo.jpeg" width="110" alt="TinyAI logo" />
+</p>
 
-TinyAI is a high-performance Android application designed for private, on-device large language model (LLM) inference. By leveraging MediaPipe GenAI and LiteRT-LM runtimes, the app executes models locally on mobile hardware, ensuring that data never leaves the device and functionality remains available without an active internet connection.
+<h1 align="center">TinyAI</h1>
 
-## Why TinyAI?
+<p align="center">
+  <img src="https://img.shields.io/badge/Kotlin-2.3-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin" />
+  <img src="https://img.shields.io/badge/Android-7.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android" />
+  <img src="https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose" />
+  <img src="https://img.shields.io/badge/License-Apache%202.0-C0362C?style=for-the-badge" alt="License" />
+  <img src="https://img.shields.io/badge/Version-1.1.0-orange?style=for-the-badge" alt="Version" />
+</p>
 
-TinyAI focuses on fully local AI execution on Android devices. Unlike cloud-based AI assistants, all inference is performed directly on-device, ensuring privacy, offline availability, and reduced latency. User data never leaves the device, making TinyAI a practical solution for running modern language and vision models without relying on external servers.
+**TinyAI** is an Android app for running large language models entirely on-device. No API keys, no servers, no data leaving your phone. Download a model once and chat with it fully offline.
 
-## Key Features
+It runs on two local inference engines (Google's MediaPipe GenAI and LiteRT-LM), lets you pull additional compatible models straight from Hugging Face, and supports both text and vision prompts depending on what the loaded model can handle.
 
-* **Hugging Face Integration**: Beyond a curated list of supported models, the app includes a repository browser that allows users to fetch and download compatible models directly from Hugging Face.
-* **Multimodal Vision Support**: Full support for vision-based models. Users can attach images to their prompts for tasks like image description and visual reasoning. The UI dynamically adapts to enable or disable attachment features based on the loaded model capabilities.
-* **Dual Inference Engines**: Seamless switching between MediaPipe `.task` and LiteRT-LM `.litertlm` formats depending on the specific model architecture.
-* **System Prompt Customization**: A dedicated interface for defining system instructions. This allows users to set specific personas or constraints for the model, which are persisted on a per-model basis and saved with chat sessions.
-* **Advanced Markdown Rendering**: The chat interface supports rich text including tables, formatted code blocks, and LaTeX mathematical expressions using the Markwon library suite.
-* **Dynamic Lifecycle Management**: To keep the initial installation size minimal, models are downloaded on demand. The app manages the local storage, loading, and unloading of these assets to optimize device memory usage.
-* **Local Session Persistence**: All conversations and associated media are stored in a local Room database, providing a complete offline history of interactions.
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src="screenshots/sc1.jpg" width="190"/></td>
+    <td><img src="screenshots/sc2.jpg" width="190"/></td>
+    <td><img src="screenshots/sc3.jpg" width="190"/></td>
+    <td><img src="screenshots/sc4.jpg" width="190"/></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/sc5.jpg" width="190"/></td>
+    <td><img src="screenshots/sc6.jpg" width="190"/></td>
+    <td><img src="screenshots/sc7.jpg" width="190"/></td>
+    <td></td>
+  </tr>
+</table>
+
+## Why TinyAI
+
+Most AI chat apps route every message through a cloud API. TinyAI does the opposite: once a model is downloaded, every single response is generated on your device's own CPU or GPU. That means it keeps working in airplane mode, your conversations never touch a server, and there's no per-message cost.
+
+## Features
+
+- **Fully on-device inference** through MediaPipe GenAI (`.task`) or LiteRT-LM (`.litertlm`) models.
+- **Automatic runtime selection**, so you don't need to configure which engine a model uses.
+- **CPU / GPU backend switching**, remembered per model.
+- **Vision support** on models that allow it. The attachment button enables itself automatically when a vision-capable model is loaded.
+- **Hugging Face model browsing**, so you're not limited to the built-in curated list.
+- **Reasoning model support** for models like DeepSeek-R1 and Qwen3 that emit a `<think>` block. The reasoning is parsed out and shown separately from the final answer as it streams in.
+- **Streaming responses** that can be stopped mid-generation.
+- **Per-model system prompts**, saved along with each chat session.
+- **Multi-session chat history**, stored locally in a Room database, including any attached images.
+- **A dedicated media gallery** for every image sent or received in a chat, with multi-select delete and a pinch-to-zoom preview.
+- **Markdown and LaTeX rendering** in chat responses, powered by Markwon.
 
 ## Features Overview
 
-| Feature                    | Supported |
-| -------------------------- | --------- |
-| Offline Inference          | Yes       |
-| Vision Models              | Yes       |
-| Streaming Responses        | Yes       |
-| Chat History               | Yes       |
-| System Prompts             | Yes       |
-| Hugging Face Downloads     | Yes       |
-| Markdown Rendering         | Yes       |
-| LaTeX Support              | Yes       |
-| Local Database Persistence | Yes       |
-| Multi-Session Management   | Yes       |
-| gguf model support         | No        |
-| PDF/Docs OCR               | No        |
+| Feature                     | Supported |
+|------------------------------|-----------|
+| Offline inference            | Yes       |
+| Vision models                | Yes       |
+| Streaming responses          | Yes       |
+| Stoppable generation         | Yes       |
+| CPU / GPU switching          | Yes       |
+| Hugging Face model downloads | Yes       |
+| Reasoning / thinking display | Yes       |
+| Multi-session chat history   | Yes       |
+| Per-model system prompts     | Yes       |
+| Markdown + LaTeX rendering   | Yes       |
+| GGUF model support           | No        |
+| Cloud sync                   | No        |
 
 ## Supported Model Formats
 
 | Runtime         | Format      |
-| --------------- | ----------- |
-| MediaPipe GenAI | `.task`     |
-| LiteRT-LM       | `.litertlm` |
-
-## Application Walkthrough
-
-### Main Chat Interface
-
-The primary screen is a streamlined chat environment designed for low-latency interaction. It supports real-time text streaming, allowing users to see the model's response as it is generated. The input bar is context-aware; it automatically enables the image attachment button only when a vision-capable model is loaded. If no model is active, the input bar provides clear guidance on how to load one from the settings.
-
-### Model Catalog and Settings
-
-This screen serves as the command center for the app's AI capabilities. Users can browse a pre-configured list of optimized models or search for specific repositories on Hugging Face. Each model entry displays its download status, size, and local path. From here, users can trigger downloads, delete unused models to free up space, or load a specific model into memory.
-
-### Session Management
-
-The app supports multiple concurrent chat sessions. Users can view their chat history in a dedicated list, rename sessions for better organization, or delete old conversations. Each session remembers the specific model and system prompt used, allowing for a seamless transition when jumping back into a previous context.
-
-### System Prompt Editor
-
-Accessible through the model settings, this feature allows for granular control over the model's behavior. Users can write and save custom instructions (e.g., "Act as a Python expert" or "Give concise answers"), which the app then injects as the system instruction during the model initialization phase.
-
-## Technical Architecture
-
-The application is built using a modern Android stack with a focus on modularity and efficiency.
-
-### Inference Layer
-
-The core logic resides in the `LocalLLMManager`, which abstracts the complexity of the underlying runtimes. It handles the initialization of the `LlmInference` engine and the LiteRT `Engine`, managing the state of the model throughout the application lifecycle.
-
-### Data and Media Management
-
-#### Model Downloader
-
-Orchestrates background downloads via the Android `DownloadManager`. It provides real-time progress updates and handles network interruptions gracefully.
-
-#### Media Storage
-
-A specialized system for managing image attachments. When an image is used in a chat, it is cached and linked to the message entry in the database to ensure persistence.
-
-#### Room Database
-
-Stores structured data for chat sessions, messages, and model configurations.
+|------------------|-------------|
+| MediaPipe GenAI  | `.task`     |
+| LiteRT-LM        | `.litertlm` |
 
 ## Tech Stack
 
-* **Language**: Kotlin
-* **UI**: Jetpack Compose
-* **State Management**: Android ViewModel with Kotlin Flow
-* **Inference**: MediaPipe GenAI, LiteRT-LM
-* **Database**: Room
-* **Networking**: Android `DownloadManager` for model assets
-* **Image Processing**: Coil, MediaPipe `BitmapImageBuilder`
-* **Formatting**: Markwon (Core, Tables, LaTeX, Inline Parser)
+| Layer           | Technology                                     |
+|-------------------|-------------------------------------------------|
+| Language         | Kotlin                                         |
+| UI               | Jetpack Compose, Navigation 3                  |
+| Local inference  | MediaPipe GenAI (`tasks-genai`), LiteRT-LM     |
+| Networking       | Retrofit + Gson (Hugging Face model lookup)    |
+| Persistence      | Room                                           |
+| Image loading    | Coil                                           |
+| Rich text        | Markwon (core, inline-parser, tables, LaTeX)   |
+| Model downloads  | Android `DownloadManager`                      |
 
-## Installation and Setup
+## Requirements
 
-### Requirements
-
-* A physical Android device running API 24 (Nougat) or higher.
-* Recommended 4GB+ of RAM for 1B to 3B parameter models.
-* Sufficient internal storage for model files (typically 500MB to 2.5GB per model).
+- A physical Android device or emulator running Android 7.0 (API 24) or higher.
+- An internet connection to download models. Inference itself works fully offline once a model is downloaded.
+- Enough free storage for the models you plan to use, typically 600 MB to 2.6 GB each.
 
 ## Building from Source
-
-1. Clone the repository:
 
 ```bash
 git clone https://github.com/YashBhadange2006/TinyAI.git
 ```
 
-2. Open the project in the latest version of Android Studio.
+1. Open the cloned folder in the latest stable version of Android Studio.
+2. Let Gradle sync and download dependencies.
+3. Run the app on a physical device or emulator (API 24+).
 
-3. Sync the Gradle files to download the required dependencies.
+## Usage
 
-4. Build and run the app on your connected Android device.
+1. **Get a model.** Open Settings, browse the curated list or search Hugging Face, and download a model.
+2. **Load it.** Once downloaded, tap Load to bring it into memory.
+3. **Optional: set a system prompt.** Give the model a persona or a set of instructions to follow.
+4. **Chat.** If the loaded model supports vision, the attachment button will be enabled automatically.
+5. **Your sessions are saved automatically** and can be reopened from the side drawer at any time.
 
-## Usage Workflow
+## Contributing
 
-**1. Model Acquisition** : Open the **Settings** screen to browse supported models or search Hugging Face. Download your preferred model using the integrated download manager.
+Contributions are welcome, whether that's a bug fix, a new feature, or an improvement to the inference layer.
 
-**2. Configuration** : Optionally, set a custom system prompt to guide the model's behavior.
+1. Fork the repository and create a branch from `main`.
+2. Make your changes, keeping commits focused and descriptive.
+3. Test on a real device where possible, since local inference behaves differently across hardware.
+4. Open a pull request describing what you changed and why.
 
-**3. Loading** : After the model finishes downloading, tap **Load** to initialize it in memory.
+If you find a bug or have an idea, feel free to open an issue first to discuss it before diving into a PR.
 
-**4. Interaction** : Return to the **Chat** screen. If the selected model supports vision capabilities, the attachment icon will be enabled, allowing image-based queries.
+## License
 
-**5. Persistence** : All chat sessions are automatically saved and can be resumed anytime from the session list.
+This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
 
 ## Acknowledgements
 
-TinyAI is built on top of several excellent open-source projects and frameworks:
-
-* MediaPipe GenAI
-* LiteRT-LM
-* Hugging Face
-* Jetpack Compose
-* Android Jetpack Libraries
-* Kotlin Coroutines & Flow
-* Room Database
-* Markwon
-* Coil
+- [MediaPipe GenAI](https://ai.google.dev/edge/mediapipe)
+- [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM)
+- [Hugging Face](https://huggingface.co)
+- [Markwon](https://noties.io/Markwon/)
