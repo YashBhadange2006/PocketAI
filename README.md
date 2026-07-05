@@ -22,14 +22,15 @@ It runs on two local inference engines (Google's MediaPipe GenAI and LiteRT-LM),
   <tr>
     <td><img src="screenshots/sc1.jpg" width="190"/></td>
     <td><img src="screenshots/sc2.jpg" width="190"/></td>
-    <td><img src="screenshots/sc3.jpg" width="190"/></td>
-    <td><img src="screenshots/sc4.jpg" width="190"/></td>
+    <td><img src="screenshots/sc8.jpg" width="190"/></td>
+    <td><img src="screenshots/sc9.jpg" width="190"/></td>
+
   </tr>
   <tr>
+    <td><img src="screenshots/sc4.jpg" width="190"/></td>
     <td><img src="screenshots/sc5.jpg" width="190"/></td>
     <td><img src="screenshots/sc6.jpg" width="190"/></td>
     <td><img src="screenshots/sc7.jpg" width="190"/></td>
-    <td></td>
   </tr>
 </table>
 
