@@ -1,6 +1,12 @@
 package com.yashbhadange.tinyai.screens.settings
 
 import android.content.res.Configuration
+import android.net.Uri
+import android.provider.OpenableColumns
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -24,10 +30,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -56,6 +65,7 @@ import com.yashbhadange.tinyai.components.ModelSearchBar
 import com.yashbhadange.tinyai.components.RemoteModelSummaryCard
 import com.yashbhadange.tinyai.data.api.HFRemoteModelGroup
 import com.yashbhadange.tinyai.screens.chat.deleteSelectedModel
+import com.yashbhadange.tinyai.screens.chat.importCustomModelFile
 import com.yashbhadange.tinyai.screens.chat.downloadSelectedModel
 import com.yashbhadange.tinyai.screens.chat.getModelStatus
 import com.yashbhadange.tinyai.screens.chat.getSystemPrompt
@@ -66,6 +76,7 @@ import com.yashbhadange.tinyai.screens.chat.updateSystemPrompt
 import com.yashbhadange.tinyai.screens.chat.ChatViewModel
 import com.yashbhadange.tinyai.screens.chat.toggleGpu
 import com.yashbhadange.tinyai.ui.theme.LocalModelAITheme
+import kotlin.contracts.contract
 
 enum class SettingsTab(val title: String) {
     EXPLORE("Explore"),
@@ -84,8 +95,35 @@ fun ModelSettingsScreen(
     onSeeMoreClicked: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
+    // created a launcher to pick files
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri: Uri?->
+            val safeUri = uri ?: return@rememberLauncherForActivityResult
+            val fileName = getFileName(context, safeUri)
+            val isValid = fileName?.endsWith(".litertlm",ignoreCase = true) == true ||
+                    fileName?.endsWith(".task",ignoreCase = true) == true
+
+            if(isValid){
+                chatViewModel.importCustomModelFile(context,safeUri)
+            } else {
+                Toast.makeText(context,"App only supports .litertlm or .task file", Toast.LENGTH_LONG).show()
+            }
+        }
+    )
     Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                // launching it when button clicked to open the file selection screen
+                onClick = {
+                    filePickerLauncher.launch(arrayOf("*/*"))
+                }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Import Model File")
+            }
+        },
         topBar = {
             TopAppBar(
                 title = { Text("Model Settings") },
@@ -139,7 +177,8 @@ fun ModelSettingsScreen(
             onOpenRemoteModelVersions = onOpenRemoteModelVersions,
             onSeeMoreClicked = onSeeMoreClicked,
             isGpuEnabled =  {chatViewModel.isGpuEnabledForModel(it.id)},
-            onGpuToggle = { model, enabled -> chatViewModel.toggleGpu(model.id,enabled) }
+            onGpuToggle = { model, enabled -> chatViewModel.toggleGpu(model.id,enabled) },
+            customModels = chatViewModel.customModels
         )
     }
 }
@@ -162,13 +201,14 @@ fun ModelSettingsContent(
     onOpenRemoteModelVersions: (HFRemoteModelGroup) -> Unit = {},
     onSeeMoreClicked: () -> Unit,
     isGpuEnabled: (ModelSpec) -> Boolean,
-    onGpuToggle: (ModelSpec,Boolean) -> Unit
+    onGpuToggle: (ModelSpec,Boolean) -> Unit,
+    customModels: List<ModelSpec> = emptyList()
 ) {
     var selectedTab by remember { mutableStateOf(SettingsTab.EXPLORE) }
     val remoteVersionModels = remember(remoteModelGroups) {
         remoteModelGroups.flatMap { it.toVersionModelSpecs() }
     }
-    val allKnownModels = (builtInModels + remoteVersionModels).distinctBy { it.fileName }
+    val allKnownModels = (builtInModels + remoteVersionModels + customModels).distinctBy { it.fileName }
 
     val filteredBuiltInModels = remember(searchQuery, builtInModels) {
         if (searchQuery.isBlank()) {
@@ -523,7 +563,25 @@ private fun ModelSettingsPreview() {
             onSystemPromptChange = { _, _ -> },
             onSeeMoreClicked = {},
             isGpuEnabled = { false },
-            onGpuToggle = {_,_->}
+            onGpuToggle = {_,_->},
+            customModels = emptyList()
         )
+    }
+}
+
+private fun getFileName(context: android.content.Context, uri: Uri): String? {
+    return context.contentResolver.query(
+        uri,
+        arrayOf(OpenableColumns.DISPLAY_NAME),
+        null,
+        null,
+        null
+    )?.use { cursor ->
+        val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        if (index >= 0 && cursor.moveToFirst()) {
+            cursor.getString(index)
+        } else {
+            null
+        }
     }
 }

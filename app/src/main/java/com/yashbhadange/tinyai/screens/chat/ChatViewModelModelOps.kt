@@ -1,5 +1,8 @@
 package com.yashbhadange.tinyai.screens.chat
 
+import android.app.Application
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.yashbhadange.tinyai.ai.ExecutionBackend
 import com.yashbhadange.tinyai.ai.ModelCatalog
@@ -10,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 fun ChatViewModel.refreshModelStatus() {
     refreshModelStatus(activeModel)
@@ -104,6 +108,7 @@ fun ChatViewModel.deleteSelectedModel(model: ModelSpec) {
             if (activeModel.id == model.id) {
                 modelDownloadStatus = downloader.getDownloadStatus(model)
             }
+            refreshCustomModelsFromStorage()
             messages.add(
                 Message("${model.displayName} was deleted from device storage.", false, includeInContext = false)
             )
@@ -179,6 +184,35 @@ fun ChatViewModel.reloadActiveModel() {
     loadSelectedModel(activeModel)
 }
 
+fun ChatViewModel.importCustomModelFile(context: Context, uri: Uri) {
+    viewModelScope.launch {
+        val savedFile = withContext(Dispatchers.IO) {
+            val originalName = resolveImportedModelName(context, uri)
+            val safeName = originalName.replace(Regex("[^A-Za-z0-9._-]"), "_")
+            val modelsDir = context.getExternalFilesDir("models") ?: return@withContext null
+            modelsDir.mkdirs()
+            // copy the target model file to the app.
+            val targetFile = File(modelsDir, "custom_${System.currentTimeMillis()}_$safeName")
+
+            // openInputStream opens that file
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                // outputStream() opens a new file inside the app storage for writing.
+                targetFile.outputStream().use { output ->
+
+                    // copies the bytes from the picked file into the app’s file.
+                    input.copyTo(output)
+                }
+            } ?: return@withContext null
+            targetFile
+        } ?: return@launch
+
+        refreshCustomModelsFromStorage()
+        messages.add(
+            Message("${savedFile.name.removePrefix("custom_").substringAfter('_', savedFile.name).removeSuffix(".litertlm").removeSuffix(".task")} imported and ready to load.", false, includeInContext = false)
+        )
+    }
+}
+
 fun ChatViewModel.loadRemoteModelCatalog() {
     viewModelScope.launch {
         remoteModelGroups = withContext(Dispatchers.IO) {
@@ -189,11 +223,12 @@ fun ChatViewModel.loadRemoteModelCatalog() {
                 emptyList()
             }
         }
+        refreshCustomModelsFromStorage()
         restoreLoadedSessionModelIfNeeded()
     }
 }
 internal fun ChatViewModel.allKnownModels(): List<ModelSpec> {
-    return ModelCatalog.supportedModels + remoteModelGroups.flatMap { it.toVersionModelSpecs() }
+    return ModelCatalog.supportedModels + remoteModelGroups.flatMap { it.toVersionModelSpecs() } + customModels
 }
 
 internal fun ChatViewModel.findKnownModelByDisplayName(displayName: String): ModelSpec? {
@@ -341,4 +376,51 @@ private fun ChatViewModel.restoreLoadedSessionModelIfNeeded() {
             )
         }
     }
+}
+
+internal fun ChatViewModel.refreshCustomModelsFromStorage() {
+    val modelsDir = getApplication<Application>().getExternalFilesDir("models") ?: return
+    val importedFiles = modelsDir.listFiles()
+        ?.filter { file ->
+            file.isFile &&
+                file.name.startsWith("custom_", ignoreCase = true) &&
+                (file.name.endsWith(".litertlm", ignoreCase = true) || file.name.endsWith(".task", ignoreCase = true))
+        }
+        ?.sortedByDescending { it.lastModified() }
+        ?: emptyList()
+
+    customModels = importedFiles.map { file ->
+        val originalName = file.name
+            .removePrefix("custom_")
+            .substringAfter('_', file.name)
+            .removeSuffix(".litertlm")
+            .removeSuffix(".task")
+
+        ModelSpec(
+            id = "custom_${file.nameWithoutExtension}",
+            displayName = originalName,
+            sizeLabel = "Imported model",
+            downloadUrl = "",
+            fileName = file.name,
+            description = "Imported from device storage."
+        )
+    }
+}
+
+private fun resolveImportedModelName(context: Context, uri: Uri): String {
+    val fallback = "imported_model"
+    return context.contentResolver.query(
+        uri,
+        arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+        null,
+        null,
+        null
+    )?.use { cursor ->
+        val index = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+        if (index >= 0 && cursor.moveToFirst()) {
+            cursor.getString(index) ?: fallback
+        } else {
+            fallback
+        }
+    } ?: fallback
 }

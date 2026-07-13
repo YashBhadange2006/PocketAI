@@ -67,6 +67,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     var remoteModelGroups by mutableStateOf<List<HFRemoteModelGroup>>(emptyList())
         internal set
 
+    var customModels by mutableStateOf<List<com.yashbhadange.tinyai.ai.ModelSpec>>(emptyList())
+        internal set
+
     var selectedAttachmentUri by mutableStateOf<Uri?>(null)
         internal set
 
@@ -89,6 +92,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     init {
         this.setIntroMessageIfNeeded()
         this.refreshModelStatus()
+        this.refreshCustomModelsFromStorage()
         this.loadRemoteModelCatalog()
         this.loadChatSessions()
         this.restoreLatestSession()
