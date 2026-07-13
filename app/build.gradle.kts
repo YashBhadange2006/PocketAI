@@ -76,6 +76,9 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     //Coil Dependency
     implementation("io.coil-kt:coil-compose:2.6.0")
+    // Play In-App Updates
+    implementation("com.google.android.play:app-update:2.1.0")
+    implementation("com.google.android.play:app-update-ktx:2.1.0")
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
