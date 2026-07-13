@@ -108,6 +108,7 @@ fun ModelSettingsScreen(
 
             if(isValid){
                 chatViewModel.importCustomModelFile(context,safeUri)
+                Toast.makeText(context,"Model added, check My Models",Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(context,"App only supports .litertlm or .task file", Toast.LENGTH_LONG).show()
             }
