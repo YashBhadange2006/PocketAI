@@ -16,6 +16,25 @@
 
 It runs on two local inference engines (Google's MediaPipe GenAI and LiteRT-LM), lets you pull additional compatible models straight from Hugging Face, and supports both text and vision prompts depending on what the loaded model can handle.
 
+## Demo
+ 
+<table>
+<tr>
+<td width="50%" valign="top">
+**App walkthrough**
+ 
+https://github.com/user-attachments/assets/b2cf2211-8c9f-4ae6-abe7-adb102296a62
+ 
+</td>
+<td width="50%" valign="top">
+**Qwen3-8B running locally on a 12GB RAM device, real-time, no speed-up**
+ 
+https://github.com/user-attachments/assets/01bd22f5-1b73-44c7-8c88-81e1888e153c
+ 
+</td>
+</tr>
+</table>
+
 ## Screenshots
 
 <table>
