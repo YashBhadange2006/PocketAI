@@ -18,20 +18,37 @@ It runs on two local inference engines (Google's MediaPipe GenAI and LiteRT-LM),
 
 ## Demo
  
-<table>
+<table align="center">
 <tr>
-<td align="center" width="220" valign="top">
-<strong>App walkthrough</strong>
- 
-https://github.com/user-attachments/assets/b2cf2211-8c9f-4ae6-abe7-adb102296a62
- 
+
+<td align="center" width="360" valign="top">
+
+### App walkthrough
+
+<div style="height:560px;">
+<video
+    src="https://github.com/user-attachments/assets/b2cf2211-8c9f-4ae6-abe7-adb102296a62"
+    controls
+    style="height:520px;">
+</video>
+</div>
+
 </td>
-<td align="center" width="220" valign="top">
-<strong>Qwen3-8B on a 12GB RAM device, real-time</strong>
- 
-https://github.com/user-attachments/assets/01bd22f5-1b73-44c7-8c88-81e1888e153c
- 
+
+<td align="center" width="360" valign="top">
+
+### Qwen3-8B on a 12GB RAM device, real-time
+
+<div style="height:560px;">
+<video
+    src="https://github.com/user-attachments/assets/01bd22f5-1b73-44c7-8c88-81e1888e153c"
+    controls
+    style="height:520px;">
+</video>
+</div>
+
 </td>
+
 </tr>
 </table>
 
