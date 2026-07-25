@@ -16,36 +16,35 @@
 
 It runs on two local inference engines (Google's MediaPipe GenAI and LiteRT-LM), lets you pull additional compatible models straight from Hugging Face, and supports both text and vision prompts depending on what the loaded model can handle.
 
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.yashbhadange.tinyai">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="65"/>
+  </a>
+</p>
+
+
 ## Demo
- 
+
 <table align="center">
 <tr>
 
-<td align="center" width="360" valign="top">
+<td align="center" width="250" valign="top">
+<strong>App walkthrough</strong><br><br>
 
-### App walkthrough
-
-<div style="height:560px;">
-<video
-    src="https://github.com/user-attachments/assets/b2cf2211-8c9f-4ae6-abe7-adb102296a62"
-    controls
-    style="height:520px;">
+<video src="https://github.com/user-attachments/assets/b2cf2211-8c9f-4ae6-abe7-adb102296a62"
+       controls
+       height="420">
 </video>
-</div>
 
 </td>
 
-<td align="center" width="360" valign="top">
+<td align="center" width="250" valign="top">
+<strong>Qwen3-8B on a 12GB RAM device, real-time</strong><br><br>
 
-### Qwen3-8B on a 12GB RAM device, real-time
-
-<div style="height:560px;">
-<video
-    src="https://github.com/user-attachments/assets/01bd22f5-1b73-44c7-8c88-81e1888e153c"
-    controls
-    style="height:520px;">
+<video src="https://github.com/user-attachments/assets/01bd22f5-1b73-44c7-8c88-81e1888e153c"
+       controls
+       height="420">
 </video>
-</div>
 
 </td>
 
