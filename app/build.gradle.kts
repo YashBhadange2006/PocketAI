@@ -6,6 +6,24 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+val signingStoreFile = System.getenv("ANDROID_KEYSTORE_PATH")
+val signingStorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+val signingKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+val signingKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+val hasReleaseSigning = listOf(
+    signingStoreFile,
+    signingStorePassword,
+    signingKeyAlias,
+    signingKeyPassword
+).all { !it.isNullOrBlank() }
+
+if (System.getenv("CI") == "true") {
+    require(hasReleaseSigning) {
+        "Release signing is required in CI. Set ANDROID_KEYSTORE_PATH, " +
+            "ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, and ANDROID_KEY_PASSWORD."
+    }
+}
+
 android {
     namespace = "com.yashbhadange.tinyai"
     compileSdk = 36
@@ -21,8 +39,22 @@ android {
         
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(signingStoreFile!!)
+                storePassword = signingStorePassword
+                keyAlias = signingKeyAlias
+                keyPassword = signingKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
