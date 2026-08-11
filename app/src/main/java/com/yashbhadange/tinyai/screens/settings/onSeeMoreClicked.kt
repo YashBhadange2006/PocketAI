@@ -34,6 +34,7 @@ fun OnSeeMoreClicked(
     onDownload: (ModelSpec) -> Unit,
     onDelete: (ModelSpec) -> Unit,
     onLoad: (ModelSpec) -> Unit,
+    onUnload: (ModelSpec) -> Unit,
     onSystemPromptChange: (ModelSpec, String) -> Unit,
     onBack: () -> Unit
 ){
@@ -68,6 +69,7 @@ fun OnSeeMoreClicked(
                     onDownload = { onDownload(model) },
                     onDelete = { onDelete(model) },
                     onLoad = { onLoad(model) },
+                    onUnload = { onUnload(model) },
                     onSystemPromptChange = { prompt ->
                         onSystemPromptChange(
                             model,

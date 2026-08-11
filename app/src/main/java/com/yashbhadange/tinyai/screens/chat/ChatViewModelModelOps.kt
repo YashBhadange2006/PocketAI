@@ -88,6 +88,12 @@ fun ChatViewModel.loadSelectedModel(model: ModelSpec) {
     }
 }
 
+fun ChatViewModel.unloadSelectedModel(model: ModelSpec) {
+    if (isLoadedModel(model)) {
+        unloadActiveConversation()
+    }
+}
+
 fun ChatViewModel.deleteSelectedModel(model: ModelSpec) {
     viewModelScope.launch {
         val deleted = withContext(Dispatchers.IO) {

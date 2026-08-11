@@ -111,6 +111,7 @@ fun PocketAINavigation(
                     onDownload = { chatViewModel.downloadSelectedModel(it) },
                     onDelete = { chatViewModel.deleteSelectedModel(it) },
                     onLoad = { chatViewModel.loadSelectedModel(it) },
+                    onUnload = { chatViewModel.unloadSelectedModel(it) },
                     onSystemPromptChange = { model, prompt -> chatViewModel.updateSystemPrompt(model, prompt) },
                     onBack = {
                         if (backStack.lastIndex > 0) {

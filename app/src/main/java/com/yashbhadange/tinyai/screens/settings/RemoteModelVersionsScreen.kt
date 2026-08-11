@@ -34,6 +34,7 @@ import com.yashbhadange.tinyai.screens.chat.loadSelectedModel
 import com.yashbhadange.tinyai.screens.chat.updateSystemPrompt
 import com.yashbhadange.tinyai.screens.chat.ChatViewModel
 import com.yashbhadange.tinyai.screens.chat.toggleGpu
+import com.yashbhadange.tinyai.screens.chat.unloadSelectedModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,6 +128,7 @@ private fun RemoteModelVersionsContent(
                     onDownload = { chatViewModel.downloadSelectedModel(model) },
                     onDelete = { chatViewModel.deleteSelectedModel(model) },
                     onLoad = { chatViewModel.loadSelectedModel(model) },
+                    onUnload = { chatViewModel.unloadSelectedModel(model) },
                     onSystemPromptChange = { prompt -> chatViewModel.updateSystemPrompt(model, prompt) },
                     isLoading = chatViewModel.isLoadingModel(model),
                     isLoaded = chatViewModel.isLoadedModel(model),

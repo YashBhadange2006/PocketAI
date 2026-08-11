@@ -243,6 +243,7 @@ fun ModelItemRow(
     onDownload: () -> Unit,
     onDelete: () -> Unit,
     onLoad: () -> Unit,
+    onUnload: () -> Unit,
     onSystemPromptChange: (String) -> Unit,
     onGpuToggle: (Boolean) -> Unit,
     isLoading: Boolean,
@@ -435,19 +436,19 @@ fun ModelItemRow(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Button(
-                            onClick = onLoad,
-                            enabled = !isLoading && !isLoaded,
+                            onClick = if (isLoaded) onUnload else onLoad,
+                            enabled = !isLoading,
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
-                                disabledContainerColor = if (isLoaded) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                             ),
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(
                                 text = when {
                                     isLoading -> "Loading..."
-                                    isLoaded -> "Chat Now"
+                                    isLoaded -> "Unload"
                                     else -> "Chat Now"
                                 },
                                 fontWeight = FontWeight.SemiBold
@@ -631,6 +632,7 @@ fun ModelItemRowPreview() {
                 onDownload = {},
                 onDelete = {},
                 onLoad = {},
+                onUnload = {},
                 systemPrompt = "",
                 onSystemPromptChange = {},
                 isLoading = false,

@@ -75,6 +75,7 @@ import com.yashbhadange.tinyai.screens.chat.loadSelectedModel
 import com.yashbhadange.tinyai.screens.chat.updateSystemPrompt
 import com.yashbhadange.tinyai.screens.chat.ChatViewModel
 import com.yashbhadange.tinyai.screens.chat.toggleGpu
+import com.yashbhadange.tinyai.screens.chat.unloadSelectedModel
 import com.yashbhadange.tinyai.ui.theme.LocalModelAITheme
 import kotlin.contracts.contract
 
@@ -170,6 +171,7 @@ fun ModelSettingsScreen(
             onDownload = { model -> chatViewModel.downloadSelectedModel(model) },
             onDelete = { model -> chatViewModel.deleteSelectedModel(model) },
             onLoad = { model -> chatViewModel.loadSelectedModel(model) },
+            onUnload = { model -> chatViewModel.unloadSelectedModel(model) },
             getSystemPrompt = { model -> chatViewModel.getSystemPrompt(model) },
             onSystemPromptChange = { model, prompt -> chatViewModel.updateSystemPrompt(model, prompt) },
             getStatus = { model -> chatViewModel.getModelStatus(model) },
@@ -194,6 +196,7 @@ fun ModelSettingsContent(
     onDownload: (ModelSpec) -> Unit,
     onDelete: (ModelSpec) -> Unit,
     onLoad: (ModelSpec) -> Unit,
+    onUnload: (ModelSpec) -> Unit,
     getSystemPrompt: (ModelSpec) -> String,
     onSystemPromptChange: (ModelSpec, String) -> Unit,
     getStatus: (ModelSpec) -> ModelDownloadStatus,
@@ -421,6 +424,7 @@ fun ModelSettingsContent(
                                 onDownload = { onDownload(model) },
                                 onDelete = { onDelete(model) },
                                 onLoad = { onLoad(model) },
+                                onUnload = { onUnload(model) },
                                 onSystemPromptChange = { prompt ->
                                     onSystemPromptChange(
                                         model,
@@ -497,6 +501,7 @@ fun ModelSettingsContent(
                         onDownload = { onDownload(model) },
                         onDelete = { onDelete(model) },
                         onLoad = { onLoad(model) },
+                        onUnload = { onUnload(model) },
                         onSystemPromptChange = { prompt -> onSystemPromptChange(model, prompt) },
                         isLoading = checkIsLoading(model),
                         isLoaded = checkIsLoaded(model),
@@ -560,6 +565,7 @@ private fun ModelSettingsPreview() {
             onDownload = {},
             onDelete = {},
             onLoad = {},
+            onUnload = {},
             getSystemPrompt = { "" },
             onSystemPromptChange = { _, _ -> },
             onSeeMoreClicked = {},
