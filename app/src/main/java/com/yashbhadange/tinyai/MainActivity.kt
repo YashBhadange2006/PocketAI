@@ -1,6 +1,7 @@
 package com.yashbhadange.tinyai
 
 import android.app.Activity
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,10 +27,12 @@ import com.yashbhadange.tinyai.ui.theme.LocalModelAITheme
 import android.widget.Toast
 
 private enum class ThemeMode {
-    SYSTEM,
     LIGHT,
     DARK
 }
+
+private const val APP_PREFERENCES = "app_preferences"
+private const val THEME_MODE_KEY = "theme_mode"
 
 class MainActivity : ComponentActivity() {
     private val updateLauncher =
@@ -45,13 +48,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         appUpdateManager = AppUpdateManagerFactory.create(this)
+        val appPreferences = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE)
         enableEdgeToEdge()
         setContent {
             val systemDark = isSystemInDarkTheme()
-            var themeMode by rememberSaveable { mutableStateOf(ThemeMode.SYSTEM) }
+            var themeMode by rememberSaveable {
+                mutableStateOf(
+                    appPreferences.getString(THEME_MODE_KEY, null)
+                        ?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() }
+                        ?: if (systemDark) ThemeMode.DARK else ThemeMode.LIGHT
+                )
+            }
 
             val darkTheme = when (themeMode) {
-                ThemeMode.SYSTEM -> systemDark
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
             }
@@ -60,16 +69,16 @@ class MainActivity : ComponentActivity() {
                 PocketAINavigation(
                     isDarkTheme = darkTheme,
                     themeModeLabel = when (themeMode) {
-                        ThemeMode.SYSTEM -> "System"
                         ThemeMode.LIGHT -> "Light"
                         ThemeMode.DARK -> "Dark"
                     },
                     onToggleTheme = {
-                        themeMode = when (themeMode) {
-                            ThemeMode.SYSTEM -> ThemeMode.LIGHT
+                        val nextThemeMode = when (themeMode) {
                             ThemeMode.LIGHT -> ThemeMode.DARK
-                            ThemeMode.DARK -> ThemeMode.SYSTEM
+                            ThemeMode.DARK -> ThemeMode.LIGHT
                         }
+                        themeMode = nextThemeMode
+                        appPreferences.edit().putString(THEME_MODE_KEY, nextThemeMode.name).apply()
                     }
                 )
             }
