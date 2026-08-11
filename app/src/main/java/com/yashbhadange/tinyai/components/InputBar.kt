@@ -128,10 +128,12 @@ fun ChatInput(
                     modifier = Modifier.weight(1f),
                     placeholder = { if(chatViewModel.isModelLoaded){
                             Text("Type a message...")
+                        } else if(chatViewModel.isModelLoading){
+                            Text("Loading model...")
                         } else if(chatViewModel.isNewChat){
-                            Text("Please download/load an existing model from settings")
+                            Text("Load a model from settings to start chatting")
                         } else {
-                            Text("Please wait untill model is loaded")
+                            Text("Load a model to continue chatting")
                         }},
                     minLines = 1,
                     maxLines = 10,
